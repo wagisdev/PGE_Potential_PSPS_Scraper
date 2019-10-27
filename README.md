@@ -7,7 +7,9 @@ If you need to get up and running fast, I would suggest truncating the data once
 
 It should be noted that PG&E is probably not going to like 300K calls coming in so be aware, they could flip the script on us pretty quickly.  There may be some ways around it, but I have not explored those yet and/or any alternative data sources as they will need to be checked on a case by case basis.
 
-To configure, adjust the settings within the python script here:
+To configure, adjust the settings within the python script.
+
+!!!!  HUGE NOTE:  Data quality is important.  Cities with bad spelling won't work.
 
 ### Defined variables
 PGE_premise_lookup:  This is where PG&E allows you to lookup the premise id.
