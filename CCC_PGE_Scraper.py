@@ -22,11 +22,11 @@
 # 888888888888888888888888888888888888888888888888888888888888888888888888888888
 
 # Define the variables
-PGE_premise_lookup = 'https://hiqlvv36ij.cloud.pge.com/Prod/v1/search/premise?address='
-PGE_status_lookup = 'https://hiqlvv36ij.cloud.pge.com/Prod/v1/search/message?premise_id='
-db_connection = r'Database Connections\\Connection to CartaEdit GISSQL16SDE.sde'
-msag_source = 'DBO.CCC_ADDRESS_POINTS'
-data_destination = 'DBO.CCC_PGE_Status'
+PGE_premise_lookup = 'https://hiqlvv36ij.cloud.pge.com/Prod/v1/search/premise?address='  #Do not adjust
+PGE_status_lookup = 'https://hiqlvv36ij.cloud.pge.com/Prod/v1/search/message?premise_id=' #Do not adjust
+db_connection = r'Database Connections\\Connection to CartaEdit GISSQL16SDE.sde'  #This is your database connection.
+msag_source = 'DBO.CCC_ADDRESS_POINTS' #main address table.
+data_destination = 'DBO.CCC_PGE_Status' #where all your statuses will get built.  This script will auto create the table if needed.  Do not modify the schema.
 
 # ------------------------------------------------------------------------------
 # DO NOT UPDATE BELOW THIS LINE OR RISK DOOM AND DISPAIR!  Have a nice day!
