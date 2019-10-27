@@ -110,7 +110,7 @@ except Exception as error_check:
 
 # Begin Status Update
 pull_from_PGE_SQL = '''
-select top 100 * from {0}
+select * from {0}
 '''.format(data_destination)
 pge_status_search_return = arcpy.ArcSDESQLExecute(db_connection).execute(pull_from_PGE_SQL)
 
