@@ -27,7 +27,7 @@ PGE_status_lookup = 'https://hiqlvv36ij.cloud.pge.com/Prod/v1/search/message?pre
 db_connection = r'Database Connections\\Connection to CartaEdit GISSQL16SDE.sde'  #This is your database connection.
 msag_source = 'DBO.CCC_ADDRESS_POINTS' #main address table.
 data_destination = 'DBO.CCC_PGE_Status' #where all your statuses will get built.  This script will auto create the table if needed.  Do not modify the schema.
-city_focus = 'Alamo' #Place city name if you want to focus script on only 1 city.  Leave '' if you want all.
+city_focus = ' Antioch' #Place city name if you want to focus script on only 1 city.  Leave '' if you want all.
 
 # ------------------------------------------------------------------------------
 # DO NOT UPDATE BELOW THIS LINE OR RISK DOOM AND DISPAIR!  Have a nice day!
@@ -257,6 +257,8 @@ else:
     target = '{0}'.format (city_focus)
     process_city(target)
 
+finished_time = time.time()
 total_time = finished_time - start_time
+total_time = total_time / 60
 print ('Process finished:  {0}'.format(start_time))
 print ('Time time required:  {0}'.format(total_time))
