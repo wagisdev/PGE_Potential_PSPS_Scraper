@@ -11,7 +11,11 @@ To configure, adjust the settings within the python script here:
 
 ### Defined variables
 PGE_premise_lookup:  This is where PG&E allows you to lookup the premise id.
+
 PGE_status_lookup:  This is where you get the status for the premise id.
+
 db_connection:  Location to your SDE connection.  This can be a file path too.
+
 msag_source:  The location of the table that has all your addresses.
+
 data_destination:  Where you want to store the status.  This table will auto create and truncate.  Do not modify the schema.
