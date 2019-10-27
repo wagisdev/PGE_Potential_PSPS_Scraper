@@ -19,3 +19,5 @@ db_connection:  Location to your SDE connection.  This can be a file path too.
 msag_source:  The location of the table that has all your addresses.
 
 data_destination:  Where you want to store the status.  This table will auto create and truncate.  Do not modify the schema.
+
+city_focus:  Allows you to run only a city through.
