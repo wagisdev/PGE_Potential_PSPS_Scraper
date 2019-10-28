@@ -138,11 +138,18 @@ def city_list():
 
 def process_city(city):
     # Begin Status Update
-    pull_from_PGE_SQL = '''
-    select * from {0}
-    where city = '{1}'
-    '''.format(data_destination, city)
-    pge_status_search_return = arcpy.ArcSDESQLExecute(db_connection).execute(pull_from_PGE_SQL)
+    if rebuild == 1:      
+        pull_from_PGE_SQL = '''
+        select * from {0}
+        where city = '{1}'
+        '''.format(data_destination, city)
+        pge_status_search_return = arcpy.ArcSDESQLExecute(db_connection).execute(pull_from_PGE_SQL)
+    else:
+        pull_from_PGE_SQL = '''
+        select * from {0}
+        where city = '{1}' and PGE_status not like 'Error%' and PGE_status = ''
+        '''.format(data_destination, city)
+        pge_status_search_return = arcpy.ArcSDESQLExecute(db_connection).execute(pull_from_PGE_SQL)
 
     hitcount = 0
 
