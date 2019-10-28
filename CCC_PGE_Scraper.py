@@ -8,9 +8,6 @@
 # Author:      John Spence
 #
 # Created:     10/27/2019
-# Modified:    
-# Modification Purpose:  
-#
 #
 #-------------------------------------------------------------------------------
 
@@ -27,13 +24,13 @@ PGE_status_lookup = 'https://hiqlvv36ij.cloud.pge.com/Prod/v1/search/message?pre
 db_connection = r'Database Connections\\Connection to CartaEdit GISSQL16SDE.sde'  #This is your database connection.
 msag_source = 'DBO.CCC_ADDRESS_POINTS' #main address table.
 data_destination = 'DBO.CCC_PGE_Status' #where all your statuses will get built.  This script will auto create the table if needed.  Do not modify the schema.
-city_focus = '' #Place city name if you want to focus script on only 1 city.  Leave '' if you want all.
+city_focus = 'Danville' #Place city name if you want to focus script on only 1 city.  Leave '' if you want all.
 
 # Careful with this one...this controls how many workers you have.
-workers = 12 # Maximum number of workers. 
+workers = 5 # Maximum number of workers. 
 
 # Rebuild Search Table
-rebuild = 0  # False to not, true to rebuild.
+rebuild = 1  # False to not, true to rebuild.
 
 # ------------------------------------------------------------------------------
 # DO NOT UPDATE BELOW THIS LINE OR RISK DOOM AND DISPAIR!  Have a nice day!
@@ -42,7 +39,7 @@ rebuild = 0  # False to not, true to rebuild.
 import arcpy
 import time
 import concurrent.futures
-import requests, json, collections
+import requests, json, collections, string
 
 def prep_data():
     # Build Results Table
@@ -209,7 +206,9 @@ def process_city(city):
                             status_payload = status_data['Items']
                             for item in status_payload:
                                 status_message = item['message']
-                                status_message = str.replace(r'', '')                                 
+                                status_message = status_message.replace(r'\u00a0', ' ')
+                                printable = set(string.printable)
+                                status_message = filter(lambda x: x in printable, status_message)
 
                                 print ('\t***')
                                 print ('\tMessage Found')
