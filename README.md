@@ -9,6 +9,8 @@ It should be noted that PG&E is probably not going to like 300K calls coming in 
 
 To configure, adjust the settings within the python script.
 
+Multi-threading is active on this script.  It is current set to 5 workers but that may be changed as I get the number dialed in better.
+
 !!!!  HUGE NOTE:  Data quality is important.  Cities with bad spelling won't work.
 
 ### Defined variables
