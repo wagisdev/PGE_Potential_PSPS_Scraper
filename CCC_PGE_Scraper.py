@@ -29,6 +29,12 @@ msag_source = 'DBO.CCC_ADDRESS_POINTS' #main address table.
 data_destination = 'DBO.CCC_PGE_Status' #where all your statuses will get built.  This script will auto create the table if needed.  Do not modify the schema.
 city_focus = '' #Place city name if you want to focus script on only 1 city.  Leave '' if you want all.
 
+# Careful with this one...this controls how many workers you have.
+workers = 12 # Maximum number of workers. 
+
+# Rebuild Search Table
+rebuild = 0  # False to not, true to rebuild.
+
 # ------------------------------------------------------------------------------
 # DO NOT UPDATE BELOW THIS LINE OR RISK DOOM AND DISPAIR!  Have a nice day!
 # ------------------------------------------------------------------------------
@@ -59,19 +65,19 @@ def prep_data():
         create_results_SQL = ('''
         Create Table {0} (
         [OBJECTID] [int]
-        , [prefix_typ] [nvarchar](4)
-        , [prefix_dir] [nvarchar](4)
-        , [street_nam] [nvarchar](50)
-        , [street_typ] [nvarchar](6)
-        , [suffix_dir] [nvarchar](4)
-        , [unit_numbe] [nvarchar](10)
-        , [city] [nvarchar](50)
-        , [state] [nvarchar](2)
-        , [zip_code] [nvarchar](20)
-        , [street_num] [nvarchar](10)
-        , [full_addre] [nvarchar](254)
-        , [full_address_to_PGE] [nvarchar](254)
-        , [PGE_status] [nvarchar](254)
+        , [prefix_typ] [varchar](4)
+        , [prefix_dir] [varchar](4)
+        , [street_nam] [varchar](50)
+        , [street_typ] [varchar](6)
+        , [suffix_dir] [varchar](4)
+        , [unit_numbe] [varchar](10)
+        , [city] [varchar](50)
+        , [state] [varchar](2)
+        , [zip_code] [varchar](20)
+        , [street_num] [varchar](10)
+        , [full_addre] [varchar](254)
+        , [full_address_to_PGE] [varchar](254)
+        , [PGE_status] [varchar](1000)
         , [SysChangeDate] [datetime2](7)
         )
         '''.format(data_destination))
@@ -196,18 +202,11 @@ def process_city(city):
                             status_payload = status_data['Items']
                             for item in status_payload:
                                 status_message = item['message']
+                                status_message = str.replace(r'', '')                                 
 
                                 print ('\t***')
                                 print ('\tMessage Found')
                                 print ('\t***\n')
-
-                                #if status_message == None:
-                                #    update_status_SQL = '''
-                                #    update {2}
-                                #    set PGE_status = '{0}', SysChangeDate = getdate()
-                                #    where ObjectID = '{1}'
-                                #    '''.format(status_message, objectID, data_destination)
-                                #else:
             
                                 update_status_SQL = '''
                                 update {2}
@@ -246,11 +245,12 @@ def process_city(city):
 # ------------ Main ------------
 start_time = time.time()
 print ('Process started:  {0}'.format(start_time))
-prep_data()
+if rebuild == 1:
+    prep_data()
 
 if city_focus == '':
     city_list()
-    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
         executor.map(process_city, city_listing)
 
 else:
