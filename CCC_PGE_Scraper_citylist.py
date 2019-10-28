@@ -1,5 +1,5 @@
 #-------------------------------------------------------------------------------
-# Name:        PGE Power Outage Status Scraper 
+# Name:        PGE Power Outage Status Scraper - City Listing Search
 # Purpose:  This script, while not the most elegant, scrapes the PG&E back end
 #           for data about specific addresses.  As there are sometimes Apt#'s etc
 #           within their data, once a match is found, it only compares City and Zip.
@@ -24,10 +24,11 @@ PGE_status_lookup = 'https://hiqlvv36ij.cloud.pge.com/Prod/v1/search/message?pre
 db_connection = r'Database Connections\\Connection to CartaEdit GISSQL16SDE.sde'  #This is your database connection.
 msag_source = 'DBO.CCC_ADDRESS_POINTS' #main address table.
 data_destination = 'DBO.CCC_PGE_Status' #where all your statuses will get built.  This script will auto create the table if needed.  Do not modify the schema.
-city_focus = '' #Place city name if you want to focus script on only 1 city.  Leave '' if you want all.
+city_focus = ['Alamo','Fairfield']  # This is a empty array.  Make sure you place each city you want to search here, separated by a ,.  For example Alamo and Fairfield would look like
+#                   city_focus = ['Alamo', 'Fairfield'] 
 
 # Careful with this one...this controls how many workers you have.
-workers = 25 # Maximum number of workers. 
+workers = 2 # Set Worker Count to Match # of Cities in List.
 
 # Rebuild Search Table
 rebuild = 1  # False to not, true to rebuild.
@@ -254,17 +255,23 @@ print ('Process started:  {0}'.format(start_time))
 if rebuild == 1:
     prep_data()
 
-if city_focus == '':
+if city_focus == []:
     city_list()
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
         executor.map(process_city, city_listing)
 
 else:
-    target = '{0}'.format (city_focus)
-    process_city(target)
+    city_listing = []
+    for city in city_focus:
+        target = '{0}'.format (city)
+        print ('Found targeted city:  {0}'.format(target))
+        city_listing.append(target)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+        executor.map(process_city, city_listing)
 
 finished_time = time.time()
 total_time = finished_time - start_time
 total_time = total_time / 60
 print ('Process finished:  {0}'.format(start_time))
 print ('Time time required:  {0}'.format(total_time))
+
