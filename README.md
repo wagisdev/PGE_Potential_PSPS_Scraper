@@ -25,3 +25,7 @@ msag_source:  The location of the table that has all your addresses.
 data_destination:  Where you want to store the status.  This table will auto create and truncate.  Do not modify the schema.
 
 city_focus:  Allows you to run only a city through.
+
+workers:  Allows you to set how many workers you are using per python run.
+
+rebuild:  This is the important one.  IF you are going to be running a specific city_focus, you need to make sure you have this either set as 1 or 0 depending on what is the first script you run.  For example, IF you are doing to target Danville with the first script and Alamo with the second.  Danville needs to be set to 1 and Alamo needs to be set as 0.  This prevents you accidently wiping the table during the script startup.
