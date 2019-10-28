@@ -27,7 +27,7 @@ data_destination = 'DBO.CCC_PGE_Status' #where all your statuses will get built.
 city_focus = '' #Place city name if you want to focus script on only 1 city.  Leave '' if you want all.
 
 # Careful with this one...this controls how many workers you have.
-workers = 25 # Maximum number of workers. 
+workers = 5 # Maximum number of workers. 
 
 # Rebuild Search Table
 rebuild = 1  # False to not, true to rebuild.
