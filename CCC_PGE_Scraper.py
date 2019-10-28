@@ -21,13 +21,14 @@
 # Define the variables
 PGE_premise_lookup = 'https://hiqlvv36ij.cloud.pge.com/Prod/v1/search/premise?address='  #Do not adjust
 PGE_status_lookup = 'https://hiqlvv36ij.cloud.pge.com/Prod/v1/search/message?premise_id=' #Do not adjust
-db_connection = r'Database Connections\\Connection to CartaEdit GISSQL16SDE.sde'  #This is your database connection.
+#db_connection = r'Database Connections\\Connection to CartaEdit GISSQL16SDE.sde'  #This is your database connection.
+db_connection = r'C:\Users\john.spence\AppData\Roaming\Esri\Desktop10.6\ArcCatalog\Connection to CartaEdit GISSQL16SDE.sde'
 msag_source = 'DBO.CCC_ADDRESS_POINTS' #main address table.
 data_destination = 'DBO.CCC_PGE_Status' #where all your statuses will get built.  This script will auto create the table if needed.  Do not modify the schema.
 city_focus = '' #Place city name if you want to focus script on only 1 city.  Leave '' if you want all.
 
 # Careful with this one...this controls how many workers you have.
-workers = 5 # Maximum number of workers. 
+workers = 25 # Maximum number of workers. 
 
 # Rebuild Search Table
 rebuild = 1  # False to not, true to rebuild.
@@ -55,7 +56,7 @@ def prep_data():
             arcpy.ArcSDESQLExecute(db_connection).execute(clear_results_SQL)
 
         except Exception as error_check_for_existance:
-            print "Status:  Failure!"
+            print ("Status:  Failure!")
             print(error_check_for_existance.args[0])
 
     else:
@@ -246,7 +247,7 @@ def process_city(city):
             else:
                 print ("\tNo address match.\n")
 
-    print "{0} has been processed.".format(city)
+    print ("{0} has been processed.".format(city))
 
 # ------------ Main ------------
 start_time = time.time()
