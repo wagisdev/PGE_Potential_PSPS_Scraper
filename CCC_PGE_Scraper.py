@@ -123,11 +123,11 @@ def city_list():
     order by city asc
     '''.format (data_destination)
     city_return = arcpy.ArcSDESQLExecute(db_connection).execute(city_list_SQL)
-    global city_list
-    city_list = []
+    global city_listing
+    city_listing = []
     for city in city_return:
         target = city[0]
-        city_list.append(target)
+        city_listing.append(target)
 
 
 def process_city(city):
@@ -250,9 +250,9 @@ prep_data()
 
 if city_focus == '':
     city_list()
-    for city in city_list:
-        target = '{0}'.format (city)
-        process_city(target)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        executor.map(process_city, city_listing)
+
 else:
     target = '{0}'.format (city_focus)
     process_city(target)
