@@ -24,11 +24,11 @@ PGE_status_lookup = 'https://hiqlvv36ij.cloud.pge.com/Prod/v1/search/message?pre
 db_connection = r'Database Connections\\Connection to CartaEdit GISSQL16SDE.sde'  #This is your database connection.
 msag_source = 'DBO.CCC_ADDRESS_POINTS' #main address table.
 data_destination = 'DBO.CCC_PGE_Status' #where all your statuses will get built.  This script will auto create the table if needed.  Do not modify the schema.
-city_focus = []  # This is a empty array.  Make sure you place each city you want to search here, separated by a ,.  For example Alamo and Fairfield would look like
+city_focus = ['Alamo','Fairfield']  # This is a empty array.  Make sure you place each city you want to search here, separated by a ,.  For example Alamo and Fairfield would look like
 #                   city_focus = ['Alamo', 'Fairfield'] 
 
 # Careful with this one...this controls how many workers you have.
-workers = 5 # Set Worker Count to Match # of Cities in List.
+workers = 2 # Set Worker Count to Match # of Cities in List.
 
 # Rebuild Search Table
 rebuild = 1  # False to not, true to rebuild.
@@ -220,8 +220,15 @@ def process_city(city):
                                 set PGE_status = '{0}', SysChangeDate = getdate()
                                 where ObjectID = '{1}'
                                 '''.format(status_message, objectID, data_destination)
-            
-                                arcpy.ArcSDESQLExecute(db_connection).execute(update_status_SQL)
+           
+                                while True:
+                                    try:
+                                        arcpy.ArcSDESQLExecute(db_connection).execute(update_status_SQL)
+                                    except Exception as write_error:
+                                        retry = 1
+                                        time.sleep(1)
+                                    if retry == 0:
+                                        break
                                 updated = 1
                         except Exception as status_payload_check:
                             print ('Something weird here.')
@@ -232,8 +239,15 @@ def process_city(city):
                             set PGE_status = '{0}', SysChangeDate = getdate()
                             where ObjectID = '{1}'
                             '''.format(status_message, objectID, data_destination)
-            
-                            arcpy.ArcSDESQLExecute(db_connection).execute(update_status_SQL)
+                            
+                            while True:
+                                try:
+                                    arcpy.ArcSDESQLExecute(db_connection).execute(update_status_SQL)
+                                except Exception as write_error:
+                                    retry = 1
+                                    time.sleep(1)
+                                if retry == 0:
+                                    break
                         retry = 0
                     except Exception as payload_error:
                         retry = 1

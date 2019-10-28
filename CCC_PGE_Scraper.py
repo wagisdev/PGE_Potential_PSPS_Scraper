@@ -27,7 +27,7 @@ data_destination = 'DBO.CCC_PGE_Status' #where all your statuses will get built.
 city_focus = '' #Place city name if you want to focus script on only 1 city.  Leave '' if you want all.
 
 # Careful with this one...this controls how many workers you have.
-workers = 5 # Maximum number of workers. 
+workers = 25 # Maximum number of workers. 
 
 # Rebuild Search Table
 rebuild = 1  # False to not, true to rebuild.
@@ -220,7 +220,14 @@ def process_city(city):
                                 where ObjectID = '{1}'
                                 '''.format(status_message, objectID, data_destination)
             
-                                arcpy.ArcSDESQLExecute(db_connection).execute(update_status_SQL)
+                                while True:
+                                    try:
+                                        arcpy.ArcSDESQLExecute(db_connection).execute(update_status_SQL)
+                                    except Exception as write_error:
+                                        retry = 1
+                                        time.sleep(1)
+                                    if retry == 0:
+                                        break
                                 updated = 1
                         except Exception as status_payload_check:
                             print ('Something weird here.')
@@ -232,7 +239,14 @@ def process_city(city):
                             where ObjectID = '{1}'
                             '''.format(status_message, objectID, data_destination)
             
-                            arcpy.ArcSDESQLExecute(db_connection).execute(update_status_SQL)
+                            while True:
+                                try:
+                                    arcpy.ArcSDESQLExecute(db_connection).execute(update_status_SQL)
+                                except Exception as write_error:
+                                    retry = 1
+                                    time.sleep(1)
+                                if retry == 0:
+                                    break
                         retry = 0
                     except Exception as payload_error:
                         retry = 1
