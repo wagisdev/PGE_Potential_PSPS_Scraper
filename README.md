@@ -1,4 +1,10 @@
 # PGE Potential PSPS Scraper
+
+## UPDATE (28 Oct 2019)
+Added new file variant that allows targeting by specific city groups.  Be careful as you need to make sure you kick off 1 script that cleans up the database and the rest DO NOT.
+
+## General Info
+
 Made at the request of a professional colleague in the affected area, this script is designed to scrape the PG&amp;E data feed for outage information and store it within a database.  This script is intended to be used within the Esri ArcGIS environment as all the SQL calls are pulling from their library.
 
 What is required for this data set to work out of the box, is source data formatted similiarily to https://gis.cccounty.us/Downloads/General%20County%20Data/CCC_Adddress_Points.zip
