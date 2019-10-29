@@ -22,12 +22,12 @@
 PGE_premise_lookup = 'https://hiqlvv36ij.cloud.pge.com/Prod/v1/search/premise?address='  #Do not adjust
 PGE_status_lookup = 'https://hiqlvv36ij.cloud.pge.com/Prod/v1/search/message?premise_id=' #Do not adjust
 db_connection = r'Database Connections\\Connection to CartaEdit GISSQL16SDE.sde'  #This is your database connection.
-msag_source = 'DBO.CCC_ADDRESS_POINTS' #main address table.
+msag_source = 'dbo.DoIT_Address_10292019_PSPSv2' #main address table.
 data_destination = 'DBO.CCC_PGE_Status' #where all your statuses will get built.  This script will auto create the table if needed.  Do not modify the schema.
 city_focus = '' #Place city name if you want to focus script on only 1 city.  Leave '' if you want all.
 
 # Careful with this one...this controls how many workers you have.
-workers = 25 # Maximum number of workers. 
+workers = 5 # Maximum number of workers. 
 
 # Rebuild Search Table
 rebuild = 1  # False to not, true to rebuild.
@@ -84,27 +84,27 @@ def prep_data():
     # Build Address List
     pull_msag_SQL = ('''
     insert into {1}
-    select 
-	    ROW_NUMBER() OVER(ORDER BY full_addre ASC) as OjectID
-	    ,prefix_typ
-        ,prefix_dir
-        ,street_nam
-        ,street_typ
-        ,suffix_dir
-        ,unit_numbe
+    select
+	    ROW_NUMBER() OVER(ORDER BY full_address ASC) as OjectID
+	    ,prefix_type
+        ,prefix_direction
+        ,street_name
+        ,street_type
+        ,suffix_direction
+        ,unit_number
         ,city
         ,state
         ,zip_code
-        ,street_num
-        ,full_addre
+        ,street_number
+        ,full_address
 	    , case
-		    when prefix_typ = '' and prefix_dir = '' and street_typ = '' and suffix_dir = '' then street_num + ' ' + street_nam
-		    when prefix_typ = '' and prefix_dir = '' and street_typ <> '' and suffix_dir ='' then street_num + ' ' + street_nam + ' ' + street_typ
-		    when prefix_typ = '' and prefix_dir = '' and street_typ = '' and suffix_dir <>'' then street_num + ' ' + street_nam + ' ' + suffix_dir
-		    when prefix_typ = '' and prefix_dir = '' and street_typ <> '' and suffix_dir <>'' then street_num + ' ' + street_nam + ' ' + street_typ + ' ' + suffix_dir
-		    when prefix_typ <> '' and prefix_dir = '' and street_typ = '' and suffix_dir = '' then street_num + ' ' + street_nam  + ' ' + prefix_typ
-		    when prefix_typ = '' and prefix_dir <> '' and street_typ = '' and suffix_dir = '' then street_num + ' ' + prefix_dir + ' ' + street_nam
-		    when prefix_typ = '' and prefix_dir <> '' and street_typ <> '' and suffix_dir = '' then street_num + ' ' + prefix_dir + ' ' + street_nam + ' ' + street_typ
+		    when prefix_type = '' and prefix_direction = '' and street_type = '' and suffix_direction = '' then street_number + ' ' + street_name
+		    when prefix_type = '' and prefix_direction = '' and street_type <> '' and suffix_direction ='' then street_number + ' ' + street_name + ' ' + street_type
+		    when prefix_type = '' and prefix_direction = '' and street_type = '' and suffix_direction <>'' then street_number + ' ' + street_name + ' ' + suffix_direction
+		    when prefix_type = '' and prefix_direction = '' and street_type <> '' and suffix_direction <>'' then street_number + ' ' + street_name + ' ' + street_type + ' ' + suffix_direction
+		    when prefix_type <> '' and prefix_direction = '' and street_type = '' and suffix_direction = '' then street_number + ' ' + street_name  + ' ' + prefix_type
+		    when prefix_type = '' and prefix_direction <> '' and street_type = '' and suffix_direction = '' then street_number + ' ' + prefix_direction + ' ' + street_name
+		    when prefix_type = '' and prefix_direction <> '' and street_type <> '' and suffix_direction = '' then street_number + ' ' + prefix_direction + ' ' + street_name + ' ' + street_type
 	    end as full_address_to_PGE
 	    , ''
         , getdate()
@@ -135,7 +135,7 @@ def city_list():
 
 def process_city(city):
     # Begin Status Update
-    if rebuild == 1:      
+    if rebuild == 1:
         pull_from_PGE_SQL = '''
         select * from {0}
         where city = '{1}'
@@ -166,17 +166,17 @@ def process_city(city):
         print ("Looking up {0}, {1} {2}".format(address, city, zipcode))
 
         while True:
-            try: 
+            try:
                 response = requests.get (PGE_premise_search)
                 data = response.json()
-       
+
                 payload = data['body']['Items']
                 retry = 0
             except Exception as payload_error:
                 retry = 1
                 time.sleep(60)
             if retry == 0:
-                break          
+                break
 
         for item in payload:
             location = item
@@ -196,10 +196,10 @@ def process_city(city):
                 print ("\tLooking up ID {0}").format(pId_PGE)
 
                 while True:
-                    try: 
+                    try:
                         status_response = requests.get (PGE_pId_status)
                         status_data = status_response.json()
-       
+
                         print ("\tChecked.\n")
 
                         try:
@@ -213,13 +213,13 @@ def process_city(city):
                                 print ('\t***')
                                 print ('\tMessage Found')
                                 print ('\t***\n')
-            
+
                                 update_status_SQL = '''
                                 update {2}
                                 set PGE_status = '{0}', SysChangeDate = getdate()
                                 where ObjectID = '{1}'
                                 '''.format(status_message, objectID, data_destination)
-            
+
                                 while True:
                                     try:
                                         arcpy.ArcSDESQLExecute(db_connection).execute(update_status_SQL)
@@ -229,16 +229,17 @@ def process_city(city):
                                     if retry == 0:
                                         break
                                 updated = 1
+                                retry = 0
                         except Exception as status_payload_check:
                             print ('Something weird here.')
                             print(status_payload_check.args[0])
-                            status_message = 'ERROR Returned from PG&E.  Check this property from the official source.'
+                            status_message = 'ERROR Returned from PG&E.  Run script again later.  May be due to congestion on the site.'
                             update_status_SQL = '''
                             update {2}
                             set PGE_status = '{0}', SysChangeDate = getdate()
                             where ObjectID = '{1}'
                             '''.format(status_message, objectID, data_destination)
-            
+
                             while True:
                                 try:
                                     arcpy.ArcSDESQLExecute(db_connection).execute(update_status_SQL)
@@ -247,12 +248,13 @@ def process_city(city):
                                     time.sleep(1)
                                 if retry == 0:
                                     break
-                        retry = 0
+                                retry = 1
+                                time.sleep(5)
                     except Exception as payload_error:
                         retry = 1
                         time.sleep(60)
                     if retry == 0:
-                        break          
+                        break
 
             elif city.upper() == city_PGE.upper() and zipcode == zipcode_PGE and updated ==1:
                 print ("\tPreviously updated!\n")
