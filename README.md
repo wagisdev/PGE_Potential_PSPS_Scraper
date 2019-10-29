@@ -1,6 +1,8 @@
 # PGE Potential PSPS Scraper
 
 ## UPDATE (28 Oct 2019)
+WARNING!!!:  The schema in the files has changed.  It does not conform 100% with the below mentioned refernce data.  I'll post a blank schema when I get a sec.  Additionally, there are some SQL query updates I need to make to allow for NULL values.  If you are using the script as it exists right now, be aware that you need to remove NULLs from the fields that are in the case statement.  '' instead of NULLS.  I'll adjust the case statement to allow for either.
+
 Added new file variant that allows targeting by specific city groups.  Be careful as you need to make sure you kick off 1 script that cleans up the database and the rest DO NOT.
 
 ## General Info
