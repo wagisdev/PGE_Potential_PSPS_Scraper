@@ -24,7 +24,12 @@ PGE_premise_lookup:  This is where PG&E allows you to lookup the premise id.
 PGE_status_lookup:  This is where you get the status for the premise id.
 
 conn_params:  This is required for the pyODBC library to work.
+
     Driver:  Change this to match your current database implementation.  See https://github.com/mkleehammer/pyodbc/wiki for details.
+    Server:  Your server name.  No ''.
+    Database:  Your database name.
+    UID:  Your user name.  No ''.
+    PWD:  Your password. No ''.  
 
 msag_source:  The location of the table that has all your addresses.
 
