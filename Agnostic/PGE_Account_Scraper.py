@@ -12,6 +12,13 @@
 #           You may need additional libraries, but you'll find that out as you go.
 #           If you are using the stock library though, I think everything you should
 #           have out of the box.
+#           !!! HOT NOTE:  It would be best if you run this script all the way through
+#           one time with the rebuild set to 1.  After you have built your list, set to 0.
+#           Setting to 0 forces a different loop where you only update account status.
+#           During testing the initial pull for about 350K seed addresses took about 12 hours.
+#           It took that long because seed addresses let you discover other addresses such as
+#           in appartment complexes, etc.
+#           The update of the status took
 #
 # Author:      John Spence
 #
@@ -34,7 +41,7 @@ conn_params = ('Driver={ODBC Driver 17 for SQL Server};'  # This will require ad
                       r'Server=YourServer;'
                       'Database=YourDatabase;'
                       #'Trusted_Connection=yes;'  #Only if you are using a AD account.
-                      r'UID=YourUserName;'  # Comment out if you are using AD authentication.
+                      r'UID=YourUserAccount;'  # Comment out if you are using AD authentication.
                       r'PWD=YourPassword'     # Comment out if you are using AD authentication.
                       )
 
@@ -148,9 +155,12 @@ def prep_4accounts():
 
     except Exception as table_exists_err:
         print ('Table likely exists.  Continuing to the next step.')
-        string = ('''truncate table {0}'''.format(account_destination))
-        cursor.execute(string)
-        conn.commit()
+        if rebuild == 1:
+            string = ('''truncate table {0}'''.format(account_destination))
+            cursor.execute(string)
+            conn.commit()
+        else:
+            print ('No rebuild needed.')
 
     cursor.close()
     conn.close()
@@ -182,112 +192,170 @@ def process_city(city):
     conn = pyodbc.connect(conn_params)
    #Begin Account Search
     cursor = conn.cursor()
-    city_string = ('''
-    select * from {0}
-    where city = '{1}'
-    ''').format(data_destination, city)
-    cursor.execute(city_string)
+    if rebuild ==1:
+        city_string = ('''
+        select * from {0}
+        where city = '{1}'
+        ''').format(data_destination, city)
+        cursor.execute(city_string)
+    else:
+        city_string = ('''
+        select * from {0}
+        where city = '{1}'
+        ''').format(account_destination, city)
+        cursor.execute(city_string)
 
     hitcount = 0
 
-    for row in cursor.fetchall():
-        address = row[12]
-        zipcode = row[9]
-        city = row[7]
+    if rebuild == 1:
+        for row in cursor.fetchall():
+            address = row[12]
+            zipcode = row[9]
+            city = row[7]
 
-        hitcount += 1
+            hitcount += 1
 
-        print ("\n\n***Records reviewed:  {0}\n\n".format(hitcount))
-        PGE_premise_search = PGE_premise_lookup + '{0}'.format(address)
-        print ("Looking up {0}, {1} {2}".format(address, city, zipcode))
+            print ("\n\n***Records reviewed:  {0}\n\n".format(hitcount))
+            PGE_premise_search = PGE_premise_lookup + '{0}'.format(address)
+            print ("Looking up {0}, {1} {2}".format(address, city, zipcode))
 
-        # Get addresses like the seed values.
-        while True:
-            try:
-                response = requests.get (PGE_premise_search)
-                data = response.json()
-                payload = data['body']['Items']
-                retry = 0
-            except Exception as payload_error:
-                retry = 1
-                time.sleep(10)
-            if retry == 0:
-                break
+            # Get addresses like the seed values.
+            while True:
+                try:
+                    response = requests.get (PGE_premise_search)
+                    data = response.json()
+                    payload = data['body']['Items']
+                    retry = 0
+                except Exception as payload_error:
+                    retry = 1
+                    time.sleep(10)
+                if retry == 0:
+                    break
 
-        for item in payload:
-            location = item
-            city_PGE = location['city']
-            zipcode_PGE = location['zip']
-            pId_PGE = location['pId']
-            streetNumber_PGE = location['streetNumber']
-            # Cleanup on aisle 6 required as some special charcters sneak in from time to time.
-            address_PGE = re.sub('[^a-zA-Z0-9 \n\.]', '', location['address'])
-            servicetype_PGE = location ['serviceType']
-            print ("\tFound {0}, {1} {2}".format (address_PGE, city_PGE, zipcode_PGE))
-            print ("\tPGE pID:  {0}".format(pId_PGE))
-            PGE_pId_status = PGE_status_lookup + '{0}'.format(pId_PGE)
-            print ("\tLooking up {0}, {1} {2}".format(address_PGE, city_PGE, zipcode_PGE))
+            for item in payload:
+                location = item
+                city_PGE = location['city']
+                zipcode_PGE = location['zip']
+                pId_PGE = location['pId']
+                streetNumber_PGE = location['streetNumber']
+                # Cleanup on aisle 6 required as some special charcters sneak in from time to time.
+                address_PGE = re.sub('[^a-zA-Z0-9 \n\.]', '', location['address'])
+                servicetype_PGE = location ['serviceType']
+                print ("\tFound {0}, {1} {2}".format (address_PGE, city_PGE, zipcode_PGE))
+                print ("\tPGE pID:  {0}".format(pId_PGE))
+                PGE_pId_status = PGE_status_lookup + '{0}'.format(pId_PGE)
+                print ("\tLooking up {0}, {1} {2}".format(address_PGE, city_PGE, zipcode_PGE))
 
-            # Get the status of the account for the address in question.
-            if city_PGE.upper() == city.upper():
+                # Get the status of the account for the address in question.
+                if city_PGE.upper() == city.upper():
 
-                halt = 0
+                    halt = 0
 
-                while True:
-                    try:
-                        status_response = requests.get (PGE_pId_status)
-                        status_data = status_response.json()
-                        print ('\tPG&E payload response: {0}'.format(status_data))
-                        halt += 1
-                        if halt == 10:
+                    while True:
+                        try:
+                            status_response = requests.get (PGE_pId_status)
+                            status_data = status_response.json()
+                            print ('\tPG&E payload response: {0}'.format(status_data))
+                            halt += 1
+                            retry = 0
+                            if halt == 10:
+                                time.sleep(60)
+                                break
+                        except Exception as account_pull_error:
+                            retry = 1
                             time.sleep(60)
+                        if retry == 0:
                             break
-                    except Exception as account_pull_error:
-                        retry = 1
-                        time.sleep(60)
-                    if retry == 0:
-                        break
-                print ("\tChecked.\n")
+                    print ("\tChecked.\n")
 
-                if status_data['Items'] == []:
-                    status_message = '\tNo Update Available'
+                    if status_data['Items'] == []:
+                        status_message = '\tNo Update Available'
+
+                    else:
+                        status_payload = status_data['Items']
+                        for item in status_payload:
+                            status_message = item['message']
+                            status_message = status_message.replace(r'\u00a0', ' ')
+                            printable = set(string.printable)
+                            status_message = filter(lambda x: x in printable, status_message)
+
+                    #Insert the address and status into the database.
+                    update_conn = pyodbc.connect(conn_params)
+                    update_cursor = update_conn.cursor()
+                    update_string = ('''
+                        insert into {0} (
+                            [address]
+                            , [streetnum]
+                            , [city]
+                            , [zip]
+                            , [pId]
+                            , [serviceType]
+                            , [PGE_status]
+                            , [SysChangeDate])
+                        values ('{1}'
+                            , '{2}'
+                            , '{3}'
+                            , '{4}'
+                            , '{5}'
+                            , '{6}'
+                            , '{7}'
+                            , getdate())''').format(account_destination, address_PGE, streetNumber_PGE, city_PGE, zipcode_PGE, pId_PGE, servicetype_PGE, status_message)
+                    update_cursor.execute(update_string)
+                    update_conn.commit()
+                    update_cursor.close()
+                    update_conn.close()
 
                 else:
-                    status_payload = status_data['Items']
-                    for item in status_payload:
-                        status_message = item['message']
-                        status_message = status_message.replace(r'\u00a0', ' ')
-                        printable = set(string.printable)
-                        status_message = filter(lambda x: x in printable, status_message)
+                    print ('\n\n*****{0} is outside of search scope*****\n\n'.format(city_PGE))
+    else:
+        for row in cursor.fetchall():
+            pId_PGE = row[5]
 
-                #Insert the address and status into the database.
-                update_conn = pyodbc.connect(conn_params)
-                update_cursor = update_conn.cursor()
-                update_string = ('''
-                    insert into {0} (
-                        [address]
-                        , [streetnum]
-                        , [city]
-                        , [zip]
-                        , [pId]
-                        , [serviceType]
-                        , [PGE_status]
-                        , [SysChangeDate])
-                    values ('{1}'
-                        , '{2}'
-                        , '{3}'
-                        , '{4}'
-                        , '{5}'
-                        , '{6}'
-                        , '{7}'
-                        , getdate())''').format(account_destination, address_PGE, streetNumber_PGE, city_PGE, zipcode_PGE, pId_PGE, servicetype_PGE, status_message)
-                update_cursor.execute(update_string)
-                update_conn.commit()
-                update_cursor.close()
-                update_conn.close()
+            hitcount += 1
+            PGE_pId_status = PGE_status_lookup + '{0}'.format(pId_PGE)
+            halt = 0
+            while True:
+                try:
+                    status_response = requests.get (PGE_pId_status)
+                    status_data = status_response.json()
+                    print ('Attempted Account Number:  {0}'.format(pId_PGE))
+                    print ('\tPG&E payload response: {0}'.format(status_data))
+                    halt += 1
+                    print ('Halting...')
+                    retry = 0
+                    if halt == 10:
+                        time.sleep(60)
+                        break
+                except Exception as account_pull_error:
+                    retry = 1
+                    print ('Retrying...')
+                    time.sleep(60)
+                if retry == 0:
+                    break
+            print ("\tChecked.\n")
 
+            if status_data['Items'] == []:
+                status_message = '\tNo Update Available'
             else:
-                print ('\n\n*****{0} is outside of search scope*****\n\n'.format(city_PGE))
+                status_payload = status_data['Items']
+                for item in status_payload:
+                    status_message = item['message']
+                    status_message = status_message.replace(r'\u00a0', ' ')
+                    printable = set(string.printable)
+                    status_message = filter(lambda x: x in printable, status_message)
+            #Insert the address and status into the database.
+            update_conn = pyodbc.connect(conn_params)
+            update_cursor = update_conn.cursor()
+            update_string = ('''
+                update {0}
+                set [PGE_Status] = '{2}'
+                , [SysChangeDate] = getdate()
+                where [pId] = '{1}'
+                ''').format(account_destination, pId_PGE, status_message)
+            update_cursor.execute(update_string)
+            update_conn.commit()
+            update_cursor.close()
+            update_conn.close()
 
     cursor.close()
     conn.close()
@@ -323,16 +391,17 @@ print ('Process started:  {0}'.format(start_time))
 if rebuild == 1:
     prep_data()
     prep_4accounts()
-    if city_focus == '':
-        city_list()
-        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
-            executor.map(process_city, city_listing)
 
-    else:
-        target = '{0}'.format (city_focus)
-        process_city(target)
+if city_focus == '':
+    city_list()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+        executor.map(process_city, city_listing)
 
-#remove_dupes()
+else:
+    target = '{0}'.format (city_focus)
+    process_city(target)
+
+remove_dupes()
 
 finished_time = time.time()
 total_time = finished_time - start_time
