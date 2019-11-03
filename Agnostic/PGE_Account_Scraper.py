@@ -31,11 +31,11 @@ PGE_premise_lookup = 'https://hiqlvv36ij.cloud.pge.com/Prod/v1/search/premise?ad
 PGE_status_lookup = 'https://hiqlvv36ij.cloud.pge.com/Prod/v1/search/message?premise_id=' #Do not adjust unless you know differently.
 
 conn_params = ('Driver={ODBC Driver 17 for SQL Server};'  # This will require adjustment if you are using a different database.
-                      r'Server=GISSQL16SDE\GIS;'
-                      'Database=CartaEdit;'
+                      r'Server=YourServer;'
+                      'Database=YourDatabase;'
                       #'Trusted_Connection=yes;'  #Only if you are using a AD account.
-                      r'UID=john.spence;'  # Comment out if you are using AD authentication.
-                      r'PWD=Tal35923!@'     # Comment out if you are using AD authentication.
+                      r'UID=YourAccount;'  # Comment out if you are using AD authentication.
+                      r'PWD=YourPassword'     # Comment out if you are using AD authentication.
                       )   
 
 msag_source = 'DBO.MSAG_Listing' #main address table.
