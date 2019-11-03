@@ -35,10 +35,10 @@ msag_source:  The location of the table that has all your addresses.
 
 data_destination:  This is where the script pulls in your data from the MSAG_Source and updates it for the scripts needs.
 
-account_destingation:  This is where the found addresses during the search are stored, account numbers, and status at those addresses.
+account_destination:  This is where the found addresses during the search are stored, account numbers, and status at those addresses.
 
 city_focus:  Allows you to run only a city through.
 
 workers:  Allows you to set how many workers you are using per python run.
 
-rebuild:  This is the important one.  IF you are going to be running a specific city_focus, you need to make sure you have this either set as 1 or 0 depending on what is the first script you run.  For example, IF you are doing to target Danville with the first script and Alamo with the second.  Danville needs to be set to 1 and Alamo needs to be set as 0.  This prevents you accidently wiping the table during the script startup.
+rebuild:  This is the important one!  Setting to 0 will use your fully run dataset in account_account_destination to be updated with the latest status.  Cache your accounts before the incident and then run this once the updates start coming out.  This will ensure a faster update and will focus entirely on the accounts you have in your system already.
