@@ -3,7 +3,7 @@
 ### HOT NOTE 2019 - Nov - 03
 Adjustments to the rebuild process have been made.  It is advisable that you run the script the first time with 1 against your master address list.  This will build out your cache.  When PG&E begins their updates or publishes their updates, you will now be able to set 0 and only gather the updates from their service.
 
-350K seed addresses with 1 set equates out to about 12 hours.  This is due to the fact that it will take the see and use it to capture any and all similar addresses that are in the same city and their account status.
+350K seed addresses with 1 set equates out to about 12 hours.  This is due to the fact that it will take the seed and use it to capture any and all similar addresses that are in the same city and their account status.
 
 
 ## General Info
