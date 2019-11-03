@@ -166,7 +166,7 @@ def city_list():
         , count(*) as points
     from {0} where city <> ''
     group by city
-    order by city desc
+    order by city asc
     ''').format (data_destination)
 
     cursor.execute(string)
@@ -231,11 +231,17 @@ def process_city(city):
             # Get the status of the account for the address in question.
             if city_PGE.upper() == city.upper():
 
+                halt = 0
+
                 while True:
                     try:
                         status_response = requests.get (PGE_pId_status)
                         status_data = status_response.json()
                         print ('\tPG&E payload response: {0}'.format(status_data))
+                        halt += 1
+                        if halt == 10:
+                            time.sleep(60)
+                            break
                     except Exception as account_pull_error:
                         retry = 1
                         time.sleep(60)
