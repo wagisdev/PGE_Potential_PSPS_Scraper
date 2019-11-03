@@ -20,6 +20,7 @@ Multi-threading is active on this script.  It is current set to 15 workers but t
 
 ### Defined variables
 PGE_premise_lookup:  This is where PG&E allows you to lookup the premise id.
+
 PGE_status_lookup:  This is where you get the status for the premise id.
 
 conn_params:  This is required for the pyODBC library to work.
