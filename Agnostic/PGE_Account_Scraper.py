@@ -41,7 +41,7 @@ conn_params = ('Driver={ODBC Driver 17 for SQL Server};'  # This will require ad
                       r'Server=YourServer;'
                       'Database=YourDatabase;'
                       #'Trusted_Connection=yes;'  #Only if you are using a AD account.
-                      r'UID=YourUserAccount;'  # Comment out if you are using AD authentication.
+                      r'UID=YourUserName;'  # Comment out if you are using AD authentication.
                       r'PWD=YourPassword'     # Comment out if you are using AD authentication.
                       )
 
@@ -56,6 +56,13 @@ workers = 15 # Maximum number of workers.
 # Rebuild Search Table
 rebuild = 1  # False to not, true to rebuild.
 
+# Send confirmation of rebuild to
+email_target = 'yours@yourdomain.com'
+
+# Configure the e-mail server and other info here.
+mail_server = 'smtp-relay.gmail.com:587'
+mail_from = 'Account Scraper<noreply@yourdomain.com>'
+
 # ------------------------------------------------------------------------------
 # DO NOT UPDATE BELOW THIS LINE OR RISK DOOM AND DISPAIR!  Have a nice day!
 # ------------------------------------------------------------------------------
@@ -64,6 +71,7 @@ import time
 import re
 import concurrent.futures
 import requests, json, collections, string
+import smtplib
 import pyodbc
 
 def prep_data():
@@ -170,14 +178,24 @@ def city_list():
 
     # Build the city list for search.
     cursor = conn.cursor()
-    string = ('''
-    select
-        distinct(city)
-        , count(*) as points
-    from {0} where city <> ''
-    group by city
-    order by city asc
-    ''').format (data_destination)
+    if rebuild == 1:
+        string = ('''
+        select
+            distinct(city)
+            , count(*) as points
+        from {0} where city <> ''
+        group by city
+        order by points desc
+        ''').format (data_destination)
+    else:
+        string = ('''
+        select
+            distinct(city)
+            , count(*) as points
+        from {0} where city <> ''
+        group by city
+        order by points desc
+        ''').format (account_destination)
 
     cursor.execute(string)
     global city_listing
@@ -268,16 +286,19 @@ def process_city(city):
                             break
                     print ("\tChecked.\n")
 
-                    if status_data['Items'] == []:
-                        status_message = '\tNo Update Available'
+                    try:
+                        if status_data['Items'] == []:
+                            status_message = 'No Update Available'
 
-                    else:
-                        status_payload = status_data['Items']
-                        for item in status_payload:
-                            status_message = item['message']
-                            status_message = status_message.replace(r'\u00a0', ' ')
-                            printable = set(string.printable)
-                            status_message = filter(lambda x: x in printable, status_message)
+                        else:
+                            status_payload = status_data['Items']
+                            for item in status_payload:
+                                status_message = item['message']
+                                status_message = status_message.replace(r'\u00a0', ' ')
+                                printable = set(string.printable)
+                                status_message = filter(lambda x: x in printable, status_message)
+                    except:
+                            status_message = 'Status Retrieval Error'
 
                     #Insert the address and status into the database.
                     update_conn = pyodbc.connect(conn_params)
@@ -312,6 +333,7 @@ def process_city(city):
             pId_PGE = row[5]
 
             hitcount += 1
+            print ("\n\n***Records reviewed:  {0}\n\n".format(hitcount))
             PGE_pId_status = PGE_status_lookup + '{0}'.format(pId_PGE)
             halt = 0
             while True:
@@ -321,7 +343,6 @@ def process_city(city):
                     print ('Attempted Account Number:  {0}'.format(pId_PGE))
                     print ('\tPG&E payload response: {0}'.format(status_data))
                     halt += 1
-                    print ('Halting...')
                     retry = 0
                     if halt == 10:
                         time.sleep(60)
@@ -334,15 +355,19 @@ def process_city(city):
                     break
             print ("\tChecked.\n")
 
-            if status_data['Items'] == []:
-                status_message = '\tNo Update Available'
-            else:
-                status_payload = status_data['Items']
-                for item in status_payload:
-                    status_message = item['message']
-                    status_message = status_message.replace(r'\u00a0', ' ')
-                    printable = set(string.printable)
-                    status_message = filter(lambda x: x in printable, status_message)
+            try:
+                if status_data['Items'] == []:
+                    status_message = 'No Update Available'
+                else:
+                    status_payload = status_data['Items']
+                    for item in status_payload:
+                        status_message = item['message']
+                        status_message = status_message.replace(r'\u00a0', ' ')
+                        printable = set(string.printable)
+                        status_message = filter(lambda x: x in printable, status_message)
+            except:
+                    status_message = 'Status Retrieval Error'
+
             #Insert the address and status into the database.
             update_conn = pyodbc.connect(conn_params)
             update_cursor = update_conn.cursor()
@@ -359,6 +384,20 @@ def process_city(city):
 
     cursor.close()
     conn.close()
+
+def prep_update():
+    update_conn = pyodbc.connect(conn_params)
+    update_cursor = update_conn.cursor()
+    update_string = ('''
+        update {0}
+        set [PGE_Status] = NULL
+        , [SysChangeDate] = getdate()
+        ''').format(account_destination)
+    update_cursor.execute(update_string)
+    update_conn.commit()
+    update_cursor.close()
+    update_conn.close()
+
 
 def remove_dupes():
     # Removes duplicate accounts from the database.  Not sure if each address has a unique account number, etc.
@@ -385,29 +424,82 @@ def remove_dupes():
     cursor.close()
     conn.close()
 
+def sendcompletetion(email_target, mail_server, mail_from,total_time):
+    conn = pyodbc.connect(conn_params)
+   #Begin Account Search
+    cursor = conn.cursor()
+    status_check = ('''
+    select count(*) from {0}
+    ''').format(account_destination)
+    cursor.execute(status_check)
+    for row in cursor.fetchall():
+        status_response = row[0]
+    #cursor.close()
+    status_check = ('''
+    select count(distinct(city)) from {0}
+    ''').format(account_destination)
+    cursor.execute(status_check)
+    for row in cursor.fetchall():
+        city_response = row[0]
+    cursor.close()
+    conn.close()
+
+    mail_priority = '5'
+    mail_subject = 'Success:  PG&E Account Scraper Has Finished.'
+    mail_msg = '{0} records have been logged spanning {1} cities.  The process took {2} minutes.\n\n[SYSTEM GENERATED MESSAGE]'.format(
+    status_response, city_response, total_time)
+
+    # Set SMTP Server and configuration of message.
+    server = smtplib.SMTP(mail_server)
+    server.ehlo()
+    server.starttls()
+    #server.set_debuglevel(1)
+    email_target = email_target
+    mail_priority = mail_priority
+    mail_subject =  mail_subject
+    mail_msg =  mail_msg
+
+    send_mail = 'To: {0}\nFrom: {1}\nX-Priority: {2}\nSubject: {3}\n\n{4}'.format(email_target, mail_from, mail_priority, mail_subject, mail_msg)
+    # Double commented out code hides how to send a BCC as well.
+    ##send_mail = 'To: {0}\nFrom: {1}\nBCC: {2}\nX-Priority: {3}\nSubject: {4}\n\n{5}'.format(email_target, mail_from, mail_bcc, mail_priority, mail_subject, mail_msg)
+
+    server.sendmail(mail_from, email_target, send_mail)
+    # Double commented out code hides how to send a BCC as well.
+    ##server.sendmail(mail_from, [email_target, mail_bcc], send_mail)
+
+    server.quit()
+
 # ------------ Main ------------
 start_time = time.time()
 print ('Process started:  {0}'.format(start_time))
 if rebuild == 1:
     prep_data()
     prep_4accounts()
+else:
+    prep_update()
 
 if city_focus == '':
     city_list()
-    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
-        executor.map(process_city, city_listing)
+    if rebuild == 0:
+        for target in city_listing:
+            process_city(target)
+    else:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+            executor.map(process_city, city_listing)
 
 else:
     target = '{0}'.format (city_focus)
     process_city(target)
 
-remove_dupes()
+#remove_dupes()  #Keep all data captured.
 
 finished_time = time.time()
 total_time = finished_time - start_time
 total_time = total_time / 60
 print ('\n\nProcess finished:  {0}'.format(start_time))
 print ('Time time required:  {0}'.format(total_time))
+
+sendcompletetion(email_target, mail_server, mail_from, total_time)
 
 # If python 2.7 comment out input below.
 input("Press Enter to continue...")
